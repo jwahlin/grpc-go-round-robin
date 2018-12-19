@@ -12,14 +12,14 @@ import (
 	"google.golang.org/grpc/resolver/manual"
 )
 
-const (
-	addressOne  = "localhost:50051"
-	addressTwo  = "localhost:50052"
-	defaultName = "world"
-)
+// Change these addresses to match up with all of your greeter server ports
+var testAddresses = []string{
+	"localhost:50051",
+	"localhost:50052",
+}
 
 func main() {
-	// The secret sauce, not needed for testing
+	// Not needed for testing, but may be needed later
 	// resolver.SetDefaultScheme("dns")
 
 	r, _ := manual.GenerateAndRegisterManualResolver()
@@ -28,8 +28,9 @@ func main() {
 	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithBalancerName(roundrobin.Name))
 
 	var resolvedAddrs []resolver.Address
-	resolvedAddrs = append(resolvedAddrs, resolver.Address{Addr: "localhost:50051"})
-	resolvedAddrs = append(resolvedAddrs, resolver.Address{Addr: "localhost:50052"})
+	for i := range testAddresses {
+		resolvedAddrs = append(resolvedAddrs, resolver.Address{Addr: testAddresses[i]})
+	}
 
 	r.NewAddress(resolvedAddrs)
 
@@ -38,9 +39,6 @@ func main() {
 	}
 	defer conn.Close()
 	c := pb.NewGreeterClient(conn)
-
-	// Contact the server and print out its response.
-	name := defaultName
 
 	// Contact the servers in round-robin manner.
 	for i := 0; i < 10; i++ {
@@ -51,7 +49,7 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		// ctx := context.Background()
-		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: "world"})
 		if err != nil {
 			log.Fatalf("could not greet: %v", err)
 		}
